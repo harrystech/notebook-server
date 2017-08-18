@@ -1,0 +1,112 @@
+Description: >
+    This template deploys all of the per-instance resources needed to run the notebook server application
+
+Parameters:
+
+    Prefix:
+        Description: The prefix to attach to this set of instance resouces (e.g. developer name). Must be 28 characters or less.
+        Type: String
+        MaxLength: 28
+
+    PersistentStackName:
+        Description: The name of the application plus environment, e.g. notebook-server. Must match that used in the persistent stack.
+        Type: String
+
+
+    BaseStackName:
+        Description: The name of the stack containing the VPC that the cluster created here should live in, eg. data-apps-dev
+        Type: String
+
+    Image:
+        Description: Location of the image in Amazon ECR to use for the application service
+        Type: String
+
+    GithubToken:
+        Description: Authentication token for access to harrys-analytics repo
+        Type: String
+
+    DBPassword:
+        Description: Password for notebook database user
+        Type: String
+
+    NotebookPassword:
+        Description: Password for Jupyter notebook server
+        Type: String
+
+    InstanceType:
+        Description: Which instance type should we use?
+        Type: String
+        Default: t2.2xlarge
+        AllowedValues:
+            - t2.small
+            - t2.medium
+            - t2.large
+            - t2.xlarge
+            - t2.2xlarge
+            - m4.4xlarge
+
+Resources:
+
+    LogGroup:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/logging.yaml
+            Parameters:
+                Prefix: !Ref Prefix
+
+    ALB:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/load-balancer.yaml
+            Parameters:
+                Prefix: !Ref Prefix
+                VPC:
+                    Fn::ImportValue: !Sub "${BaseStackName}:vpc"
+                Subnets:
+                    Fn::ImportValue: !Sub "${BaseStackName}:public-subnets"
+                SecurityGroup:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:public-security-group"
+
+    
+    EC2Instance:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/ec2-instance.yaml
+            Parameters:
+                ECSCluster:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:ecs-cluster"
+                Subnet:
+                    Fn::ImportValue: !Sub "${BaseStackName}:private-subnet-1"
+                SecurityGroup:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:private-security-group"
+                ECSInstanceProfile:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:ecs-profile"
+                ImageId:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:imageid"
+                InstanceType: !Ref InstanceType
+
+
+    ECSServiceNotebookServer:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/services/notebook-server-service.yaml # need to provide our own service templates here
+            Parameters:
+                Prefix: !Ref Prefix
+                ECSCluster:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:ecs-cluster"
+                Image: !Ref Image
+                HostPort: 8888
+                ContainerPort: 8888
+                VPC:
+                    Fn::ImportValue: !Sub "${BaseStackName}:vpc"
+                SecurityGroup:
+                    Fn::ImportValue: !Sub "${PersistentStackName}:public-security-group"
+                Subnets: 
+                    Fn::ImportValue: !Sub "${BaseStackName}:public-subnets"
+                InstanceType: !Ref InstanceType
+                TargetGroup: !GetAtt ALB.Outputs.LoadBalancerTargetGroup
+                LogGroup: !GetAtt LogGroup.Outputs.Group
+                GithubToken: !Ref GithubToken
+                DBPassword: !Ref DBPassword
+                NotebookPassword: !Ref NotebookPassword
+

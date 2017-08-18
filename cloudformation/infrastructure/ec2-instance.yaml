@@ -1,0 +1,52 @@
+Description: >
+    This template deploys an EC2 instance to the provided ECS Cluster.
+Parameters:
+
+    InstanceType:
+        Description: Which instance type should we use?
+        Type: String
+        Default: t2.small
+
+    ECSCluster:
+        Description: The cluster into which to put the instance.
+        Type: String
+
+    Subnet:
+        Description: Choose which subnets this EC2 instance should be deployed to
+        Type: AWS::EC2::Subnet::Id
+
+    SecurityGroup:
+        Description: Select the Security Group to use for the EC2 instance hosts
+        Type: AWS::EC2::SecurityGroup::Id
+
+    ECSInstanceProfile:
+        Description: The ECS instance profile with permissions to add instance to cluster
+        Type: String
+
+    ImageId:
+        Description: The id of the AMI to use
+        Type: String
+
+
+Resources:
+
+    EC2Instance:
+        Type: AWS::EC2::Instance
+        Properties:
+              IamInstanceProfile: !Ref ECSInstanceProfile
+              ImageId: !Ref ImageId
+              InstanceType: !Ref InstanceType
+              SecurityGroupIds: 
+                - !Ref SecurityGroup
+              SubnetId: !Ref Subnet
+              KeyName: "notebook-server-dev-keypair"
+              UserData:
+                  "Fn::Base64": !Sub |
+                      #!/bin/bash
+                      echo ECS_CLUSTER=${ECSCluster} >> /etc/ecs/ecs.config
+
+Outputs:
+
+    Instance:
+        Description: A reference to the EC2 Instance
+        Value: !Ref EC2Instance

@@ -1,0 +1,63 @@
+Description: >
+    This template deploys an Application Load Balancer that exposes our notebook server ECS service.
+Parameters:
+
+    Prefix:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+
+    VPC:
+        Type: AWS::EC2::VPC::Id
+        Description: Choose which VPC the Load Balancer should be deployed to
+
+    Subnets:
+        Description: Choose which subnets the Load Balancer should be deployed to
+        Type: List<AWS::EC2::Subnet::Id>
+
+    SecurityGroup:
+        Description: Select the Security Group to apply to the Load Balancer
+        Type: AWS::EC2::SecurityGroup::Id
+
+Resources:
+
+    ApplicationLoadBalancer:
+        Type: AWS::ElasticLoadBalancingV2::LoadBalancer
+        Properties:
+            Name: !Sub nbs-${Prefix}
+            Subnets: !Ref Subnets
+            SecurityGroups:
+                - !Ref SecurityGroup
+
+    LoadBalancerListener:
+        Type: AWS::ElasticLoadBalancingV2::Listener
+        Properties:
+            LoadBalancerArn: !Ref ApplicationLoadBalancer
+            Port: 8888
+            Protocol: HTTP
+            DefaultActions: 
+                - Type: forward
+                  TargetGroupArn: !Ref LoadBalancerTargetGroup
+
+    LoadBalancerTargetGroup:
+        Type: AWS::ElasticLoadBalancingV2::TargetGroup
+        Properties:
+            Name: !Sub nbs-${Prefix}
+            VpcId: !Ref VPC
+            Port: 8888
+            Protocol: HTTP
+            HealthCheckIntervalSeconds: 300
+            HealthCheckPath: '/login'
+            HealthCheckPort: 8888
+            HealthCheckProtocol: HTTP
+            HealthCheckTimeoutSeconds: 60
+            HealthyThresholdCount: 10
+
+Outputs:
+
+    LoadBalancerTargetGroup:
+        Description: The resource name
+        Value: !Ref LoadBalancerTargetGroup
+
+    LoadBalancerUrl:
+        Description: The URL of the ELB
+        Value: !GetAtt ApplicationLoadBalancer.DNSName

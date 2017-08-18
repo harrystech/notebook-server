@@ -1,0 +1,172 @@
+Description: >
+    This template deploys an ECS cluster to the provided VPC and subnets
+    using an Auto Scaling Group
+Parameters:
+
+    Prefix:
+        Description: An environment name that will be prefixed to resource names
+        Type: String
+
+    ECSCluster:
+        Description: Please provide the ECS Cluster ID that this service should run on
+        Type: String
+
+    Image:
+        Description: Location of the image in ECS to use
+        Type: String
+
+    HostPort:
+        Description: The host port number
+        Type: Number
+        Default: 8888
+
+    ContainerPort:
+        Description: The container port number
+        Type: Number
+        Default: 8888
+
+    ClusterSize:
+        Description: How many ECS hosts do you want to initially deploy?
+        Type: Number
+        Default: 1
+
+    VPC:
+        Description: Choose which VPC this ECS cluster should be deployed to
+        Type: AWS::EC2::VPC::Id
+
+    Subnets:
+        Description: Choose which subnets this ECS cluster should be deployed to
+        Type: List<AWS::EC2::Subnet::Id>
+
+    SecurityGroup:
+        Description: Select the Security Group to use for the ECS cluster hosts
+        Type: AWS::EC2::SecurityGroup::Id
+
+    InstanceType:
+        Description: Type of our EC2 Instance, so we can look up its memory
+        Type: String
+
+    TargetGroup:
+        Description: The application load balancer target group for the application
+        Type: String
+
+    LogGroup:
+        Description: The name of the log group for the service
+        Type: String
+
+    GithubToken:
+        Description: Authentication token for access to harrys-analytics repo
+        Type: String
+
+    DBPassword:
+        Description: Password for notebook database user
+        Type: String
+
+    NotebookPassword:
+        Description: Password for Jupyter notebook server
+        Type: String
+
+
+Mappings:
+
+    InstanceTypeToMemory:
+        t2.small:
+            memory: 1900
+        t2.medium:
+            memory: 3900
+        t2.large:
+            memory: 7900
+        t2.xlarge:
+            memory: 15900
+        t2.2xlarge:
+            memory: 31900
+        m4.4xlarge:
+            memory: 63900
+
+
+Resources:
+
+    ECSService:
+        Type: "AWS::ECS::Service"
+        Properties:
+          Cluster:
+            !Ref ECSCluster
+          DesiredCount:
+            !Ref ClusterSize
+          DeploymentConfiguration:
+            MaximumPercent: 200
+            MinimumHealthyPercent: 50
+          TaskDefinition:
+            !Ref TaskDefinition
+          ServiceName:
+            !Sub nbs-${Prefix}
+          LoadBalancers:
+            - TargetGroupArn: !Ref TargetGroup
+              ContainerName: !Sub nbs-${Prefix}
+              ContainerPort: !Ref ContainerPort
+          Role:
+            !Ref ServiceRole
+
+    TaskDefinition:
+      Type: "AWS::ECS::TaskDefinition"
+      Properties:
+        ContainerDefinitions:
+          - Name:
+              !Sub nbs-${Prefix}
+            Image: !Ref Image
+            MemoryReservation: !FindInMap [InstanceTypeToMemory, !Ref InstanceType, memory]
+            Essential: "true"
+            PortMappings:
+                - ContainerPort: !Ref ContainerPort
+                  HostPort: !Ref HostPort
+                  Protocol: "tcp"
+            LogConfiguration:
+              LogDriver: "awslogs"
+              Options:
+                awslogs-group: !Ref LogGroup
+                awslogs-region: "us-east-1"
+                awslogs-stream-prefix: !Sub nbs-${Prefix}
+            Environment:
+                - Name: "GH_TOKEN"
+                  Value: !Ref GithubToken
+                - Name: "DB_PASSWORD"
+                  Value: !Ref DBPassword
+                - Name: "NOTEBOOK_PASSWORD"
+                  Value: !Ref NotebookPassword
+        Family:
+          !Sub nbs-${Prefix}
+
+    ServiceRole:
+      Type: AWS::IAM::Role
+      Properties:
+          RoleName: !Sub nbs-${Prefix}
+          Path: /
+          AssumeRolePolicyDocument: |
+              {
+                  "Statement": [{
+                      "Effect": "Allow",
+                      "Principal": { "Service": [ "ecs.amazonaws.com" ]},
+                      "Action": [ "sts:AssumeRole" ]
+                  }]
+              }
+          Policies:
+              - PolicyName: !Sub nbs-${Prefix}
+                PolicyDocument:
+                  {
+                      "Version": "2012-10-17",
+                      "Statement": [{
+                              "Effect": "Allow",
+                              "Action": [
+                                  "ec2:AuthorizeSecurityGroupIngress",
+                                  "ec2:Describe*",
+                                  "elasticloadbalancing:DeregisterInstancesFromLoadBalancer",
+                                  "elasticloadbalancing:Describe*",
+                                  "elasticloadbalancing:RegisterInstancesWithLoadBalancer",
+                                  "elasticloadbalancing:DeregisterTargets",
+                                  "elasticloadbalancing:DescribeTargetGroups",
+                                  "elasticloadbalancing:DescribeTargetHealth",
+                                  "elasticloadbalancing:RegisterTargets"
+                              ],
+                              "Resource": "*"
+                      }]
+                    }

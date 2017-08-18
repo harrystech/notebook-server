@@ -1,0 +1,93 @@
+Description: >
+  This template contains the security groups required by our entire stack.
+
+Parameters:
+  AppName:
+    Description: An environment name that will be prefixed to resource names
+    Type: String
+  VPC:
+    Type: 'AWS::EC2::VPC::Id'
+    Description: Choose which VPC the security groups should be deployed to
+
+  WhitelistCIDR1:
+    Description: Please enter the first IP address range that can be used to communicate with the ALB
+    Type: String
+
+  WhitelistCIDR2:
+    Description: Please enter the second IP address range that can be used to communicate with the ALB
+    Type: String
+
+  WhitelistCIDR3:
+    Description: Please enter the third IP address range that can be used to communicate with the ALB
+    Type: String
+
+  WhitelistCIDR4:
+    Description: Please enter the fourth IP address range that can be used to communicate with the ALB
+    Type: String
+
+Conditions:
+
+    ValidNotAnythingWhitelistCIDR1:
+        !Not [ !Equals [ !Ref WhitelistCIDR1, "0.0.0.0/0" ] ]
+
+    ValidNotAnythingWhitelistCIDR2:
+        !Not [ !Equals [ !Ref WhitelistCIDR2, "0.0.0.0/0" ] ]
+
+    ValidNotAnythingWhitelistCIDR3:
+        !Not [ !Equals [ !Ref WhitelistCIDR3, "0.0.0.0/0" ] ]
+
+    ValidNotAnythingWhitelistCIDR4:
+        !Not [ !Equals [ !Ref WhitelistCIDR4, "0.0.0.0/0" ] ]
+
+Resources:
+  PublicSecurityGroup:
+    Type: 'AWS::EC2::SecurityGroup'
+    Properties:
+      VpcId: !Ref VPC
+      GroupDescription: Access to the load balancer that sits in front of ECS
+      SecurityGroupIngress:
+        - CidrIp: !If [ ValidNotAnythingWhitelistCIDR1, !Ref "WhitelistCIDR1", !Ref "AWS::NoValue" ]
+          IpProtocol: tcp
+          FromPort: '8888'
+          ToPort: '8888'
+        - CidrIp: !If [ ValidNotAnythingWhitelistCIDR2, !Ref "WhitelistCIDR2", !Ref "AWS::NoValue" ]
+          IpProtocol: tcp
+          FromPort: '8888'
+          ToPort: '8888'
+        - CidrIp: !If [ ValidNotAnythingWhitelistCIDR3, !Ref "WhitelistCIDR2", !Ref "AWS::NoValue" ]
+          IpProtocol: tcp
+          FromPort: '8888'
+          ToPort: '8888'
+        - CidrIp: !If [ ValidNotAnythingWhitelistCIDR4, !Ref "WhitelistCIDR2", !Ref "AWS::NoValue" ]
+          IpProtocol: tcp
+          FromPort: '8888'
+          ToPort: '8888'
+      Tags:
+        - Key: Name
+          Value: !Sub '${AppName}-public'
+  # This security group defines who/where is allowed to access the private instances.
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+        VpcId: !Ref VPC
+        GroupDescription: Access to the ECS hosts and the tasks/containers that run on them
+        SecurityGroupIngress:
+            # Only allow inbound access to ECS from the ELB
+            - SourceSecurityGroupId: !Ref PublicSecurityGroup
+              IpProtocol: tcp
+              FromPort: '8888'
+              ToPort: '8888'
+        Tags:
+            - Key: Name
+              Value: !Sub ${AppName}-private
+Outputs:
+  PublicSecurityGroup:
+    Description: A reference to the public security group
+    Value: !Ref PublicSecurityGroup
+    Export:
+      Name: !Sub ${AppName}:public-security-group
+  PrivateSecurityGroup:
+    Description: A reference to the private security group
+    Value: !Ref PrivateSecurityGroup
+    Export:
+      Name: !Sub ${AppName}:private-security-group

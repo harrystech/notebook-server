@@ -1,0 +1,19 @@
+Description: >
+    The log group to be created in CloudWatch for AWS Logging
+Parameters:
+
+    Prefix:
+        Description: The name of the app which will be used as the name of the log group
+        Type: String
+
+Resources:
+    LogGroup:
+      Type: "AWS::Logs::LogGroup"
+      Properties:
+        LogGroupName: !Sub "nbs-${Prefix}"
+        RetentionInDays: 30
+
+Outputs:
+    Group:
+      Description: Name of the log group for this service
+      Value: !Ref LogGroup

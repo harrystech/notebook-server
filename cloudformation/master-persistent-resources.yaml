@@ -1,0 +1,68 @@
+Description: >
+    This template deploys all of the persistent resources needed to run the notebook server application
+
+Parameters:
+
+    BaseStackName:
+        Description: The name of the stack containing the VPC that the cluster created here should live in, eg. data-apps-dev
+        Type: String
+    WhitelistCIDR1:
+        Description: Please enter the first IP address range that can be used to communicate with the ALB
+        Type: String
+        Default: 0.0.0.0/0
+        MinLength: 9
+        MaxLength: 18
+        AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+    WhitelistCIDR2:
+        Description: Please enter the second IP address range that can be used to communicate with the ALB
+        Type: String
+        Default: 0.0.0.0/0
+        MinLength: 9
+        MaxLength: 18
+        AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+    WhitelistCIDR3:
+        Description: Please enter the third IP address range that can be used to communicate with the ALB
+        Type: String
+        Default: 0.0.0.0/0
+        MinLength: 9
+        MaxLength: 18
+        AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+    WhitelistCIDR4:
+        Description: Please enter the fourth IP address range that can be used to communicate with the ALB
+        Type: String
+        Default: 0.0.0.0/0
+        MinLength: 9
+        MaxLength: 18
+        AllowedPattern: (\d{1,3})\.(\d{1,3})\.(\d{1,3})\.(\d{1,3})/(\d{1,2})
+        ConstraintDescription: must be a valid IP CIDR range of the form x.x.x.x/x
+
+
+Resources:
+
+    SecurityGroups:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/security-groups.yaml
+            Parameters: 
+                AppName: !Ref AWS::StackName
+                VPC:
+                    Fn::ImportValue: !Sub "${BaseStackName}:vpc"
+                WhitelistCIDR1: !Ref WhitelistCIDR1
+                WhitelistCIDR2: !Ref WhitelistCIDR2
+                WhitelistCIDR3: !Ref WhitelistCIDR1
+                WhitelistCIDR4: !Ref WhitelistCIDR2
+
+    ECSCluster:
+        Type: AWS::CloudFormation::Stack
+        Properties:
+            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/ecs-cluster.yaml
+            Parameters:
+                AppName: !Ref AWS::StackName
+                VPC:
+                    Fn::ImportValue: !Sub "${BaseStackName}:vpc"
+                SecurityGroup: !GetAtt SecurityGroups.Outputs.PrivateSecurityGroup
+                Subnets:
+                    Fn::ImportValue: !Sub "${BaseStackName}:private-subnets"
