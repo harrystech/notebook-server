@@ -45,7 +45,7 @@ Resources:
     SecurityGroups:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/security-groups.yaml
+            TemplateURL: infrastructure/security-groups.yaml
             Parameters: 
                 AppName: !Ref AWS::StackName
                 VPC:
@@ -58,7 +58,7 @@ Resources:
     ECSCluster:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/ecs-cluster.yaml
+            TemplateURL: infrastructure/ecs-cluster.yaml
             Parameters:
                 AppName: !Ref AWS::StackName
                 VPC:

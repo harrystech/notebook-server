@@ -50,14 +50,14 @@ Resources:
     LogGroup:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/logging.yaml
+            TemplateURL: infrastructure/logging.yaml
             Parameters:
                 Prefix: !Ref Prefix
 
     ALB:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/load-balancer.yaml
+            TemplateURL: infrastructure/load-balancer.yaml
             Parameters:
                 Prefix: !Ref Prefix
                 VPC:
@@ -71,7 +71,7 @@ Resources:
     EC2Instance:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/infrastructure/ec2-instance.yaml
+            TemplateURL: infrastructure/ec2-instance.yaml
             Parameters:
                 ECSCluster:
                     Fn::ImportValue: !Sub "${PersistentStackName}:ecs-cluster"
@@ -89,7 +89,7 @@ Resources:
     ECSServiceNotebookServer:
         Type: AWS::CloudFormation::Stack
         Properties:
-            TemplateURL: https://s3.amazonaws.com/harrys-notebook-server-dev/services/notebook-server-service.yaml # need to provide our own service templates here
+            TemplateURL: services/notebook-server-service.yaml # need to provide our own service templates here
             Parameters:
                 Prefix: !Ref Prefix
                 ECSCluster:
