@@ -4,18 +4,29 @@
 # that is passed into the deploy scripts
 # e.g. config_production.sh for your production environment
 
+# IP addresses to whitelist for talking to the load balancer, of the form 'xxx.xxx.xxx.xx/xx'
 WHITELIST_CIDR1=
 WHITELIST_CIDR2=
+# Secrets that are passed in to Docker image as environment variables
 GITHUB_TOKEN=
 DB_PASSWORD=
 NOTEBOOK_PASSWORD=
 
+# name of the stack containing the VPC and subnets (e.g. data-apps-prod)
 BASE_STACK_NAME=
+# name to give persistent stack containing the ECS cluster and security groups (e.g. nbs-persistent)
 PERSISTENT_STACK_NAME=
+# root of the name of the instance stack, which will get '-user' appended in the deploy process
+# (eg. nbs-instance, which becomes nbs-instance-myname)
 INSTANCE_STACK_NAME_PREFIX=
 
+# name of an AWS profile present in `~/aws/.config` that has the requisite permissions to deploy the stacks
 AWS_PROFILE=
+# S3 bucket to store CloudFormation templates
 S3_BUCKET=
+# prefix in the bucket in which to store persistent stack templates
 S3_PERSISTENT_PREFIX=
+# prefix in the bucket in which to store instance stack templates
 S3_INSTANCE_PREFIX=
+# URL pointing to the location on ECS of the Docker image (and tag) to deploy
 IMAGE_LOCATION=
