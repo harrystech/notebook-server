@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+set -e
+set -u
 
 show_usage_and_exit() {
   echo "Usage: `basename $0` ENVIRONMENT [USER]"
-  echo "ENVIRONMENT should be development or production and corresponds to the AWS account you with to deploy to."
+  echo "ENVIRONMENT should be 'development' or 'production' and correspond to the AWS account to which you want to deploy."
   echo "USER is the suffix used in naming stack resources and defaults to $USER"
   exit ${1-0}
 }
@@ -29,13 +31,9 @@ else
 fi
 
 # Set user if passed in
-if [ $# -eq 2 ] ; then
-  user="$2"
-else
-  user=$USER
-fi
+user="${2-$USER}"
 
-source config/config_$environment.sh
+source "config/config_$environment.sh"
 
 tempfile=$(mktemp /tmp/instance_resources_packaged_template.XXXXXX) || exit 1
 trap "rm $tempfile" EXIT
@@ -51,8 +49,8 @@ aws --profile $AWS_PROFILE cloudformation package \
     --output-template-file $tempfile
 
 aws --profile $AWS_PROFILE cloudformation create-stack --region us-east-1 --disable-rollback --capabilities CAPABILITY_NAMED_IAM \
---stack-name "$INSTANCE_STACK_NAME_PREFIX-$user" --template-body "file://$tempfile" \
---parameters ParameterKey=Prefix,ParameterValue="$user" ParameterKey=PersistentStackName,ParameterValue="$PERSISTENT_STACK_NAME" \
-ParameterKey=Image,ParameterValue="$IMAGE_LOCATION" ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
-ParameterKey=GithubToken,ParameterValue="$GITHUB_TOKEN" ParameterKey=DBPassword,ParameterValue="$DB_PASSWORD" \
-ParameterKey=NotebookPassword,ParameterValue="$NOTEBOOK_PASSWORD"
+    --stack-name "$INSTANCE_STACK_NAME_PREFIX-$user" --template-body "file://$tempfile" \
+    --parameters ParameterKey=Prefix,ParameterValue="$user" ParameterKey=PersistentStackName,ParameterValue="$PERSISTENT_STACK_NAME" \
+    ParameterKey=Image,ParameterValue="$IMAGE_LOCATION" ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
+    ParameterKey=GithubToken,ParameterValue="$GITHUB_TOKEN" ParameterKey=DBPassword,ParameterValue="$DB_PASSWORD" \
+    ParameterKey=NotebookPassword,ParameterValue="$NOTEBOOK_PASSWORD"

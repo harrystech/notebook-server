@@ -1,8 +1,10 @@
 #!/usr/bin/env bash
+set -e
+set -u
 
 show_usage_and_exit() {
   echo "Usage: `basename $0` ENVIRONMENT"
-  echo "ENVIRONMENT should be development or production and corresponds to the AWS account you with to deploy to."
+  echo "ENVIRONMENT should be 'development' or 'production' and correspond to the AWS account to which you want to deploy."
   exit ${1-0}
 }
 
@@ -27,7 +29,7 @@ else
   environment="$1"
 fi
 
-source config/config_$environment.sh
+source "config/config_$environment.sh"
 
 tempfile=$(mktemp /tmp/persistent_resources_packaged_template.XXXXXX) || exit 1
 trap "rm $tempfile" EXIT
@@ -43,6 +45,6 @@ aws --profile $AWS_PROFILE cloudformation package \
     --output-template-file $tempfile
 
 aws --profile $AWS_PROFILE cloudformation create-stack --region us-east-1 \
---disable-rollback --capabilities CAPABILITY_NAMED_IAM --stack-name "$PERSISTENT_STACK_NAME" \
---template-body "file://$tempfile" --parameters ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
-ParameterKey=WhitelistCIDR1,ParameterValue="$WHITELIST_CIDR1" ParameterKey=WhitelistCIDR2,ParameterValue="$WHITELIST_CIDR2"
+    --disable-rollback --capabilities CAPABILITY_NAMED_IAM --stack-name "$PERSISTENT_STACK_NAME" \
+    --template-body "file://$tempfile" --parameters ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
+    ParameterKey=WhitelistCIDR1,ParameterValue="$WHITELIST_CIDR1" ParameterKey=WhitelistCIDR2,ParameterValue="$WHITELIST_CIDR2"
