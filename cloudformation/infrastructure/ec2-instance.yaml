@@ -39,7 +39,6 @@ Resources:
               SecurityGroupIds: 
                 - !Ref SecurityGroup
               SubnetId: !Ref Subnet
-              KeyName: "notebook-server-dev-keypair"
               UserData:
                   "Fn::Base64": !Sub |
                       #!/bin/bash

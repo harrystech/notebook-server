@@ -34,25 +34,16 @@ The following are assumed to already be in place:
 * Base cloudformation stack consisting of a VPC, public/private subnets, and a NAT Gateway with an Elastic IP
 * Redshift cluster housing the data warehouse that can be accessed via the Elastic IP of the NAT Gateay
 * An ECS repository to host the Docker image remotely
+* One or more config files in the `/config` directory named `config_<ENVIRONMENT>.sh` that set the variables specified in `config/config_<environment>.sh.template`
 
 ### Persistent resources (bring up once):
 
 1. Make sure that your AWS profile is set to a role that has permissions to upload to S3, push to the ECS repository, and create a CloudFormation stack.
 2. Follow commands in the ECS repository on AWS to push the image.
-3. Deploy the CloudFormation templates to their appropriate S3 bucket locations:
+3. Package and deploy the CloudFormation stack of persistent resources, which include Security Groups and an ECS Cluster with no instances inside the base stack's VPC:
 
 ```
-aws s3 cp --recursive cloudformation/infrastructure s3://[BUCKET NAME]/cloudformation/infrastructure
-aws s3 cp --recursive cloudformation/services s3://[BUCKET NAME]/cloudformation/services
-```
-
-4. Bring up the CloudFormation stack of persistent resources, which include Security Groups and an ECS Cluster with no instances inside the base stack's VPC:
-
-```
-aws cloudformation create-stack --role-arn [ROLE ARN] --region us-east-1 \
---profile [AWS PROFILE] --disable-rollback --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM --stack-name notebook-server-dev \
---template-body file://`pwd`/cloudformation/master-persistent-resources.yaml --parameters ParameterKey=BaseStackName,ParameterValue=[BASE STACK NAME] \
-ParameterKey=WhitelistCIDR1,ParameterValue=[WHITELIST IP 1] ParameterKey=WhitelistCIDR2,ParameterValue=[WHITELIST IP 2]
+bash deploy_persistent_stack.sh <ENVIRONMENT>
 ```
 
 ### Instance resources (on demand):
@@ -61,16 +52,8 @@ Prior to a working session, bring up the CloudFormation stack of instance resour
 an Application Load Balancer, and a service in the ECS cluster that runs the latest `notebook-server` Docker image.
 
 ```
-aws cloudformation create-stack --role-arn [ROLE ARN] --region us-east-1 \
---profile [AWS PROFILE] --disable-rollback --capabilities CAPABILITY_IAM CAPABILITY_NAMED_IAM --stack-name notebook-server-dev-[PREFIX] \
---template-body file://`pwd`/cloudformation/master-instance-resources.yaml --parameters ParameterKey=Prefix,ParameterValue=[PREFIX] \
-ParameterKey=PersistentStackName,ParameterValue=notebook-server-dev ParameterKey=Image,ParameterValue=[ECR IMAGE LOCATION] \
-ParameterKey=BaseStackName,ParameterValue=[BASE STACK NAME] ParameterKey=GithubToken,ParameterValue=[GITHUB TOKEN] \
-ParameterKey=DBPassword,ParameterValue=[DB PASSWORD] ParameterKey=NotebookPassword,ParameterValue=[NOTEBOOK PASSWORD] \
-ParameterKey=InstanceType,ParameterValue=[INSTANCE TYPE]
+bash deploy_instance_stack.sh <ENVIRONMENT> [<USER>]
 ```
-
-to the `create-stack` command. The default instance type is `t2.2xlarge`.
 
 Locate the DNS of the load balancer and navigate to port 8888 to see the notebook server. From the browser, open
 a new Terminal to run your git commands.
