@@ -44,7 +44,7 @@ aws --profile $AWS_PROFILE cloudformation package \
     --s3-prefix $S3_PERSISTENT_PREFIX \
     --output-template-file $tempfile
 
-aws --profile $AWS_PROFILE cloudformation create-stack --region us-east-1 \
-    --disable-rollback --capabilities CAPABILITY_NAMED_IAM --stack-name "$PERSISTENT_STACK_NAME" \
-    --template-body "file://$tempfile" --parameters ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
-    ParameterKey=WhitelistCIDR1,ParameterValue="$WHITELIST_CIDR1" ParameterKey=WhitelistCIDR2,ParameterValue="$WHITELIST_CIDR2"
+aws --profile $AWS_PROFILE cloudformation deploy --region us-east-1 \
+    --capabilities CAPABILITY_NAMED_IAM --stack-name "$PERSISTENT_STACK_NAME" \
+    --template-file "$tempfile" --parameter-overrides BaseStackName="$BASE_STACK_NAME" \
+    WhitelistCIDR1="$WHITELIST_CIDR1" WhitelistCIDR2="$WHITELIST_CIDR2" S3Bucket="$S3_BUCKET"

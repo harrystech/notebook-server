@@ -6,6 +6,10 @@ Parameters:
         Description: An environment name that will be prefixed to resource names
         Type: String
 
+    S3Bucket:
+        Description: A bucket to which the role will be granted access
+        Type: String
+
     VPC:
         Description: Choose which VPC this ECS cluster should be deployed to
         Type: AWS::EC2::VPC::Id
@@ -158,7 +162,7 @@ Resources:
                     }
 
                 - PolicyName: analytics-interactive
-                  PolicyDocument: |
+                  PolicyDocument: !Sub |
                     {
                         "Statement": [{
                             "Effect": "Allow",
@@ -166,8 +170,8 @@ Resources:
                                 "s3:*"
                             ],
                             "Resource": [
-                                "arn:aws:s3:::harrys-notebook-server-dev/*",
-                                "arn:aws:s3:::harrys-notebook-server-dev"
+                                "arn:aws:s3:::${S3Bucket}/*",
+                                "arn:aws:s3:::${S3Bucket}"
                             ]
                         }]
                     }

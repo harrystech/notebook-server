@@ -6,6 +6,9 @@ Parameters:
     BaseStackName:
         Description: The name of the stack containing the VPC that the cluster created here should live in, eg. data-apps-dev
         Type: String
+    S3Bucket:
+        Description: The name of the bucket that the notebook server role should have access to
+        Type: String
     WhitelistCIDR1:
         Description: Please enter the first IP address range that can be used to communicate with the ALB
         Type: String
@@ -61,6 +64,7 @@ Resources:
             TemplateURL: infrastructure/ecs-cluster.yaml
             Parameters:
                 AppName: !Ref AWS::StackName
+                S3Bucket: !Ref S3Bucket
                 VPC:
                     Fn::ImportValue: !Sub "${BaseStackName}:vpc"
                 SecurityGroup: !GetAtt SecurityGroups.Outputs.PrivateSecurityGroup
