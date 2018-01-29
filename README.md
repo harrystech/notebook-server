@@ -52,7 +52,7 @@ Prior to a working session, bring up the CloudFormation stack of instance resour
 an Application Load Balancer, and a service in the ECS cluster that runs the latest `notebook-server` Docker image.
 
 ```
-bash deploy_instance_stack.sh <ENVIRONMENT> [<USER>]
+bash deploy_instance_stack.sh [-i INSTANCE_TYPE] <ENVIRONMENT> [<USER>]
 ```
 
 Locate the DNS of the load balancer and navigate to port 8888 to see the notebook server. From the browser, open
