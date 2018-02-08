@@ -58,4 +58,8 @@ bash deploy_instance_stack.sh [-i INSTANCE_TYPE] <ENVIRONMENT> [<USER>]
 Locate the DNS of the load balancer and navigate to port 8888 to see the notebook server. From the browser, open
 a new Terminal to run your git commands.
 
-Use the `delete-stack` command or the AWS UI to destroy the stack when you're done.
+Use the `delete-stack` command or the AWS UI to destroy the stack when you're done:
+
+```
+aws cloudformation delete-stack --role-arn <ROLE ARN> --profile <AWS PROFILE> --stack-name <INSTANCE_STACK_NAME_PREFIX>-<USER>
+```

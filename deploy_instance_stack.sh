@@ -11,17 +11,13 @@ show_usage_and_exit() {
 
 instance_type=""
 
-while getopts "hi:" opt; do
+while getopts ":hi:" opt; do
   case $opt in
     h)
       show_usage_and_exit
       ;;
     i)
       instance_type="ParameterKey=InstanceType,ParameterValue=${OPTARG}"
-      ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
       ;;
   esac
 done
