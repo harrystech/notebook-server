@@ -3,20 +3,21 @@ set -e
 set -u
 
 show_usage_and_exit() {
-  echo "Usage: `basename $0` ENVIRONMENT [USER]"
+  echo "Usage: `basename $0` [-i INSTANCE_TYPE] ENVIRONMENT [USER]"
   echo "ENVIRONMENT should be 'development' or 'production' and correspond to the AWS account to which you want to deploy."
   echo "USER is the suffix used in naming stack resources and defaults to $USER"
   exit ${1-0}
 }
 
-while getopts ":h" opt; do
+instance_type=""
+
+while getopts ":hi:" opt; do
   case $opt in
     h)
       show_usage_and_exit
       ;;
-    \?)
-      echo "Invalid option: -$OPTARG" >&2
-      exit 1
+    i)
+      instance_type="ParameterKey=InstanceType,ParameterValue=${OPTARG}"
       ;;
   esac
 done
@@ -53,4 +54,4 @@ aws --profile $AWS_PROFILE cloudformation create-stack --region us-east-1 --disa
     --parameters ParameterKey=Prefix,ParameterValue="$user" ParameterKey=PersistentStackName,ParameterValue="$PERSISTENT_STACK_NAME" \
     ParameterKey=Image,ParameterValue="$IMAGE_LOCATION" ParameterKey=BaseStackName,ParameterValue="$BASE_STACK_NAME" \
     ParameterKey=GithubToken,ParameterValue="$GITHUB_TOKEN" ParameterKey=DBPassword,ParameterValue="$DB_PASSWORD" \
-    ParameterKey=NotebookPassword,ParameterValue="$NOTEBOOK_PASSWORD"
+    ParameterKey=NotebookPassword,ParameterValue="$NOTEBOOK_PASSWORD" $instance_type
