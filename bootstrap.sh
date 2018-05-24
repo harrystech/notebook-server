@@ -4,7 +4,7 @@ set -e
 git config --global user.email "analytics@harrys.com"
 git config --global user.name "Analytics Notebooks"
 git clone https://${GH_TOKEN}:x-oauth-basic@github.com/harrystech/harrys-analytics.git ./harrys-analytics
-cd ./harrys-analytics
+git clone https://${GH_TOKEN}:x-oauth-basic@github.com/harrystech/betsy-predictors.git ./betsy-predictors
 
 echo "*:*:*:harrys_analytics:${DB_PASSWORD}" >> ~/.pgpass
 chmod 0600 ~/.pgpass
